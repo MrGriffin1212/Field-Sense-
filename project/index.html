@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FieldSense // UHV E-Field Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000;
+  --green:#00FF41;
+  --dim:#003B00;
+  --accent:#008F11;
+  --ghost:#F0FFF0;
+  --panel:#06090604;
+  --panel-solid:#070A07;
+  --warn:#FF5252;
+  --warn-dim:#3a0a0a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  background:#000;color:var(--green);
+  font-family:'Share Tech Mono','Courier New',monospace;
+  min-height:100vh;overflow-x:hidden;
+  cursor:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><line x1='10' y1='0' x2='10' y2='20' stroke='%2300FF41' stroke-width='1'/><line x1='0' y1='10' x2='20' y2='10' stroke='%2300FF41' stroke-width='1'/><circle cx='10' cy='10' r='2' fill='none' stroke='%2300FF41' stroke-width='1'/></svg>") 10 10, crosshair;
+}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:#000}
+::-webkit-scrollbar-thumb{background:var(--dim)}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+::selection{background:var(--green);color:#000}
+
+#bg{
+  position:fixed;inset:0;z-index:-1;display:block;
+  width:100vw;height:100vh;
+}
+
+main{
+  max-width:1280px;margin:0 auto;
+  padding:28px 24px 60px;
+}
+
+header.bar{
+  display:flex;align-items:baseline;justify-content:space-between;
+  padding:12px 18px;border:1px solid var(--dim);
+  background:rgba(0,0,0,.6);backdrop-filter:blur(2px);
+  margin-bottom:24px;
+}
+header .brand{
+  font-size:22px;letter-spacing:.32em;color:var(--green);
+  text-shadow:0 0 12px rgba(0,255,65,.6);
+}
+header .tag{
+  color:var(--accent);font-size:12px;letter-spacing:.28em;
+}
+header .who-note{
+  color:var(--accent);font-size:11px;letter-spacing:.22em;
+}
+header .who-note b{color:var(--green)}
+
+.grid{
+  display:grid;
+  grid-template-columns: minmax(340px, 1fr) minmax(380px, 1.1fr);
+  gap:22px;
+}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+
+.card{
+  border:1px solid var(--dim);
+  background:rgba(0,0,0,.72);
+  padding:22px;
+  position:relative;
+}
+.card::before{
+  content:"// "attr(data-tag);
+  position:absolute;top:-9px;left:18px;
+  background:#000;padding:0 10px;
+  color:var(--accent);font-size:11px;letter-spacing:.28em;
+}
+
+/* ===== inputs ===== */
+.field{
+  display:grid;grid-template-columns:90px 1fr 96px 50px;
+  align-items:center;gap:12px;
+  padding:10px 0;border-bottom:1px dashed #0a1f0a;
+}
+.field:last-child{border-bottom:none}
+.field label{
+  color:var(--green);font-size:13px;letter-spacing:.18em;
+}
+.field label small{
+  display:block;color:var(--accent);font-size:10px;letter-spacing:.18em;
+  margin-top:2px;
+}
+.field input[type=number]{
+  background:#020602;color:var(--green);
+  border:1px solid var(--dim);
+  font-family:inherit;font-size:14px;letter-spacing:.06em;
+  padding:7px 8px;text-align:right;
+  outline:none;width:100%;
+}
+.field input[type=number]:focus{
+  border-color:var(--green);
+  box-shadow:0 0 12px rgba(0,255,65,.4);
+}
+.field .unit{color:var(--accent);font-size:12px;letter-spacing:.18em}
+
+/* range slider — webkit */
+input[type=range]{
+  -webkit-appearance:none;appearance:none;
+  width:100%;background:transparent;height:22px;cursor:inherit;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:2px;background:var(--dim);
+}
+input[type=range]::-moz-range-track{
+  height:2px;background:var(--dim);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:14px;height:14px;margin-top:-6px;border-radius:0;
+  background:var(--green);border:1px solid var(--green);
+  box-shadow:0 0 10px rgba(0,255,65,.6);
+}
+input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:0;border:1px solid var(--green);
+  background:var(--green);box-shadow:0 0 10px rgba(0,255,65,.6);
+}
+
+.advanced{
+  margin-top:16px;border-top:1px solid var(--dim);padding-top:12px;
+}
+.advanced summary{
+  cursor:inherit;color:var(--accent);font-size:12px;letter-spacing:.28em;
+  list-style:none;padding:6px 0;user-select:none;
+}
+.advanced summary::-webkit-details-marker{display:none}
+.advanced summary::before{content:"[+] ";color:var(--green)}
+.advanced[open] summary::before{content:"[-] ";color:var(--green)}
+
+.actions{
+  display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;
+}
+.btn{
+  flex:1;min-width:140px;
+  background:transparent;color:var(--green);
+  border:1px solid var(--green);
+  font-family:inherit;font-size:12px;letter-spacing:.22em;
+  padding:11px 16px;cursor:inherit;text-align:center;
+  transition:background .2s,color .2s,box-shadow .2s;
+}
+.btn:hover{background:var(--green);color:#000;box-shadow:0 0 14px rgba(0,255,65,.5)}
+.btn.ghost{border-color:var(--dim);color:var(--accent)}
+.btn.ghost:hover{background:var(--dim);color:var(--green);box-shadow:none}
+
+/* ===== output ===== */
+.readout{
+  display:flex;flex-direction:column;align-items:center;
+  padding:30px 18px 20px;
+  border:1px solid var(--green);
+  background:linear-gradient(180deg,rgba(0,255,65,.05),rgba(0,0,0,0));
+  position:relative;
+}
+.readout .lbl{
+  font-size:11px;letter-spacing:.32em;color:var(--accent);
+}
+.readout .big{
+  font-size:clamp(56px,9vw,96px);
+  letter-spacing:.04em;color:var(--green);
+  text-shadow:0 0 22px rgba(0,255,65,.55),0 0 50px rgba(0,255,65,.25);
+  line-height:1.05;margin-top:6px;font-weight:700;
+}
+.readout .unit-big{color:var(--accent);font-size:18px;letter-spacing:.3em;margin-top:-4px}
+
+.status{
+  margin-top:18px;padding:10px 18px;
+  font-size:13px;letter-spacing:.3em;
+  border:1px solid var(--green);color:var(--green);
+  background:rgba(0,255,65,.06);
+}
+.status.exceeded{
+  border-color:var(--warn);color:var(--warn);
+  background:rgba(255,80,80,.08);
+  text-shadow:0 0 10px rgba(255,80,80,.5);
+  animation:warnPulse 1s ease-in-out infinite;
+}
+@keyframes warnPulse{
+  0%,100%{box-shadow:0 0 0 rgba(255,80,80,0)}
+  50%{box-shadow:0 0 22px rgba(255,80,80,.55)}
+}
+
+.subreads{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;width:100%;
+}
+.subreads div{
+  border:1px dashed var(--dim);
+  padding:9px 12px;font-size:12px;color:var(--ghost);
+  display:flex;justify-content:space-between;letter-spacing:.06em;
+}
+.subreads div span:first-child{color:var(--accent);letter-spacing:.22em;font-size:11px}
+
+/* ===== matrix panels ===== */
+.matrices{
+  margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;
+}
+@media(max-width:600px){.matrices{grid-template-columns:1fr}}
+.mat{
+  border:1px solid var(--dim);padding:12px;
+}
+.mat h4{
+  color:var(--accent);font-size:11px;letter-spacing:.3em;margin-bottom:8px;
+}
+.mat table{
+  width:100%;border-collapse:collapse;font-size:12px;color:var(--ghost);
+}
+.mat td{
+  padding:5px 6px;text-align:right;
+  border:1px solid #051705;background:#020602;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ===== chart ===== */
+.chart-wrap{
+  margin-top:24px;
+  border:1px solid var(--dim);background:rgba(0,0,0,.75);
+  padding:16px 18px 22px;position:relative;
+}
+.chart-wrap::before{
+  content:"// LATERAL_PROFILE";
+  position:absolute;top:-9px;left:18px;
+  background:#000;padding:0 10px;
+  color:var(--accent);font-size:11px;letter-spacing:.28em;
+}
+.chart-meta{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:10px;flex-wrap:wrap;gap:10px;
+}
+.chart-meta .legend{
+  display:flex;gap:18px;font-size:11px;letter-spacing:.18em;color:var(--accent);
+}
+.chart-meta .legend i{
+  display:inline-block;width:18px;height:2px;background:var(--green);
+  vertical-align:middle;margin-right:6px;
+}
+.chart-meta .legend i.warn{background:var(--warn)}
+.chart-meta .info{color:var(--accent);font-size:11px;letter-spacing:.18em}
+#chart{width:100%;height:340px;display:block;background:#020602;border:1px solid var(--dim)}
+
+footer{
+  margin-top:32px;text-align:center;color:var(--accent);
+  font-size:11px;letter-spacing:.32em;padding-top:18px;border-top:1px solid var(--dim);
+}
+footer .cur{color:var(--green);animation:blink 1s steps(2,start) infinite}
+@keyframes blink{50%{opacity:0}}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<main>
+  <header class="bar">
+    <div>
+      <div class="brand">FIELDSENSE</div>
+      <div class="tag">UHV AC GROUND-LEVEL E-FIELD CALCULATOR</div>
+    </div>
+    <div class="who-note">WHO PUBLIC EXPOSURE LIMIT :: <b>5 kV/m</b></div>
+  </header>
+
+  <div class="grid">
+
+    <!-- INPUT CARD -->
+    <section class="card" data-tag="INPUT_PARAMETERS">
+      <div id="inputs"></div>
+
+      <details class="advanced">
+        <summary>ADVANCED // BUNDLE_GEOMETRY</summary>
+        <div id="advInputs"></div>
+      </details>
+
+      <div class="actions">
+        <button class="btn" id="presetBtn">[ LOAD 1200 kV PRESET ]</button>
+        <button class="btn ghost" id="resetBtn">[ RESET ]</button>
+      </div>
+    </section>
+
+    <!-- OUTPUT CARD -->
+    <section class="card" data-tag="OUTPUT_FIELD">
+      <div class="readout">
+        <div class="lbl">PREDICTED  E_v  AT (x , 0)</div>
+        <div class="big" id="outE">0.000</div>
+        <div class="unit-big">kV / m</div>
+        <div class="status" id="outStatus">— WITHIN LIMIT —</div>
+
+        <div class="subreads">
+          <div><span>r_eq</span><span id="outReq">—</span></div>
+          <div><span>K_v</span><span id="outKv">—</span></div>
+          <div><span>x position</span><span id="outX">—</span></div>
+          <div><span>V phase rms</span><span id="outV">—</span></div>
+        </div>
+      </div>
+
+      <div class="matrices">
+        <div class="mat">
+          <h4>[ P ] POTENTIAL COEFFICIENTS</h4>
+          <table id="matP"></table>
+        </div>
+        <div class="mat">
+          <h4>[ M ] = [ P ]^(-1)</h4>
+          <table id="matM"></table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- CHART -->
+  <div class="chart-wrap">
+    <div class="chart-meta">
+      <div class="legend">
+        <span><i></i>E_v ( x )  analytical</span>
+        <span><i class="warn"></i>WHO limit 5 kV/m</span>
+      </div>
+      <div class="info" id="chartInfo">peak = — kV/m   |   x_peak = — m</div>
+    </div>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <footer>FIELDSENSE &copy; 2026 &nbsp; MGIT ECE <span class="cur">_</span></footer>
+</main>
+
+<script>
+/* ================================================================
+   ANALYTICAL ENGINE  (port of analytical.py to JavaScript)
+   ================================================================ */
+function bundleEquivalentRadius(N, r, R){
+  return Math.pow(N * r * Math.pow(R, N-1), 1/N);
+}
+
+function potentialMatrix(coords, r_eq){
+  const n = coords.length;
+  const P = [];
+  for(let i=0;i<n;i++){
+    const row = [];
+    const [xi, yi] = coords[i];
+    for(let j=0;j<n;j++){
+      const [xj, yj] = coords[j];
+      if(i===j) row.push(Math.log(2*yi / r_eq));
+      else {
+        const A = Math.hypot(xi-xj, yi-yj);
+        const I = Math.hypot(xi-xj, yi+yj);
+        row.push(Math.log(I/A));
+      }
+    }
+    P.push(row);
+  }
+  return P;
+}
+
+/* 3x3 matrix inverse via adjugate / determinant */
+function invert3x3(m){
+  const a=m[0][0], b=m[0][1], c=m[0][2];
+  const d=m[1][0], e=m[1][1], f=m[1][2];
+  const g=m[2][0], h=m[2][1], i=m[2][2];
+  const det = a*(e*i - f*h) - b*(d*i - f*g) + c*(d*h - e*g);
+  if(Math.abs(det) < 1e-15) return null;
+  const inv = [
+    [(e*i - f*h)/det, (c*h - b*i)/det, (b*f - c*e)/det],
+    [(f*g - d*i)/det, (a*i - c*g)/det, (c*d - a*f)/det],
+    [(d*h - e*g)/det, (b*g - a*h)/det, (a*e - b*d)/det],
+  ];
+  return inv;
+}
+
+function fieldK(xEval, coords){
+  return coords.map(([xi,yi]) => -2*yi / ((xEval-xi)*(xEval-xi) + yi*yi));
+}
+
+function matTtimesVec(M, K){
+  /* M^T * K  for a square M */
+  const n = M.length;
+  const out = new Array(n).fill(0);
+  for(let j=0;j<n;j++)
+    for(let i=0;i<n;i++)
+      out[j] += M[i][j] * K[i];
+  return out;
+}
+
+function computeEv(p){
+  const { x, H, d, V, N, R, r } = p;
+  const r_eq = bundleEquivalentRadius(N, r, R);
+  const coords = [[-d, H], [0, H], [d, H]];
+  const P = potentialMatrix(coords, r_eq);
+  const M = invert3x3(P);
+  const K = fieldK(x, coords);
+  const Kv = matTtimesVec(M, K);
+  const [k1, k2, k3] = Kv;
+  const Kv_s = Math.sqrt(Math.max(0,
+    k1*k1 + k2*k2 + k3*k3 - k1*k2 - k2*k3 - k3*k1
+  ));
+  return { r_eq, P, M, K, Kv, K_v: Kv_s, E_v: Kv_s * V, coords };
+}
+
+/* ================================================================
+   STATE  +  INPUT  WIDGETS
+   ================================================================ */
+const DEFAULTS = {
+  x: 0,
+  H: 37,
+  d: 24,
+  V: +(1200/Math.sqrt(3)).toFixed(3),
+  N: 8,
+  R: 0.6,
+  r: 0.02815,
+};
+const STATE = { ...DEFAULTS };
+
+const PRIMARY = [
+  { key:"x", label:"x", desc:"lateral position", min:-150, max:150, step:0.5, unit:"m"  },
+  { key:"H", label:"H", desc:"conductor height", min:5,    max:80,  step:0.5, unit:"m"  },
+  { key:"d", label:"d", desc:"phase spacing",    min:5,    max:40,  step:0.5, unit:"m"  },
+  { key:"V", label:"V", desc:"phase rms voltage",min:50,   max:900, step:0.5, unit:"kV" },
+];
+const ADVANCED = [
+  { key:"N", label:"N", desc:"sub-conductors / bundle", min:1, max:12,  step:1,     unit:""  },
+  { key:"R", label:"R", desc:"bundle radius",           min:0.05, max:1.5, step:0.01, unit:"m" },
+  { key:"r", label:"r", desc:"sub-conductor radius",    min:0.005, max:0.05, step:0.001, unit:"m" },
+];
+
+function makeField(group, def){
+  const row = document.createElement("div");
+  row.className = "field";
+  row.innerHTML = `
+    <label>${def.label}<small>${def.desc}</small></label>
+    <input type="range" data-key="${def.key}" min="${def.min}" max="${def.max}" step="${def.step}" value="${STATE[def.key]}">
+    <input type="number" data-key="${def.key}" min="${def.min}" max="${def.max}" step="${def.step}" value="${STATE[def.key]}">
+    <div class="unit">${def.unit}</div>
+  `;
+  group.appendChild(row);
+
+  const rng = row.querySelector("input[type=range]");
+  const num = row.querySelector("input[type=number]");
+  function sync(val){
+    const v = +val;
+    STATE[def.key] = v;
+    rng.value = v;
+    num.value = v;
+    update();
+  }
+  rng.addEventListener("input", e => sync(e.target.value));
+  num.addEventListener("input", e => sync(e.target.value));
+}
+
+const grpPrimary  = document.getElementById("inputs");
+const grpAdvanced = document.getElementById("advInputs");
+PRIMARY.forEach(d => makeField(grpPrimary,  d));
+ADVANCED.forEach(d => makeField(grpAdvanced, d));
+
+document.getElementById("presetBtn").addEventListener("click", () => loadAll(DEFAULTS));
+document.getElementById("resetBtn").addEventListener("click",  () => loadAll(DEFAULTS));
+
+function loadAll(src){
+  Object.assign(STATE, src);
+  document.querySelectorAll("input[type=range],input[type=number]").forEach(el=>{
+    const k = el.dataset.key;
+    if(k in STATE) el.value = STATE[k];
+  });
+  update();
+}
+
+/* ================================================================
+   RENDER  OUTPUT
+   ================================================================ */
+const outE      = document.getElementById("outE");
+const outStatus = document.getElementById("outStatus");
+const outReq    = document.getElementById("outReq");
+const outKv     = document.getElementById("outKv");
+const outX      = document.getElementById("outX");
+const outV      = document.getElementById("outV");
+const matPEl    = document.getElementById("matP");
+const matMEl    = document.getElementById("matM");
+
+function renderMatrix(el, M, digits){
+  let html = "";
+  for(const row of M){
+    html += "<tr>";
+    for(const v of row){
+      html += `<td>${v.toFixed(digits)}</td>`;
+    }
+    html += "</tr>";
+  }
+  el.innerHTML = html;
+}
+
+const WHO = 5.0;
+
+function update(){
+  const res = computeEv(STATE);
+  const E = res.E_v;
+
+  outE.textContent   = E.toFixed(4);
+  outReq.textContent = res.r_eq.toFixed(5) + " m";
+  outKv.textContent  = res.K_v.toExponential(3) + " /m";
+  outX.textContent   = STATE.x.toFixed(2) + " m";
+  outV.textContent   = STATE.V.toFixed(2) + " kV";
+
+  if(E > WHO){
+    outStatus.textContent = "⚠ EXCEEDS WHO LIMIT (" + WHO + " kV/m)";
+    outStatus.classList.add("exceeded");
+  } else {
+    outStatus.textContent = "— WITHIN WHO LIMIT (" + WHO + " kV/m) —";
+    outStatus.classList.remove("exceeded");
+  }
+
+  renderMatrix(matPEl, res.P, 4);
+  renderMatrix(matMEl, res.M, 5);
+
+  drawChart();
+}
+
+/* ================================================================
+   LATERAL PROFILE CHART
+   ================================================================ */
+const chart = document.getElementById("chart");
+const cctx  = chart.getContext("2d");
+const chartInfo = document.getElementById("chartInfo");
+
+function sizeChart(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = chart.clientWidth, h = chart.clientHeight;
+  chart.width  = w * dpr;
+  chart.height = h * dpr;
+  cctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize", () => { sizeChart(); drawChart(); });
+
+function drawChart(){
+  sizeChart();
+  const w = chart.clientWidth, h = chart.clientHeight;
+  const padL=46, padR=18, padT=14, padB=30;
+  const plotW = w - padL - padR;
+  const plotH = h - padT - padB;
+
+  /* compute profile */
+  const xMin = -120, xMax = 120, N = 240;
+  const xs = new Array(N+1), ys = new Array(N+1);
+  let yMax = 0, yPeak = 0, xPeakPos = 0;
+  for(let i=0;i<=N;i++){
+    const x = xMin + (xMax-xMin)*i/N;
+    const res = computeEv({ ...STATE, x });
+    xs[i] = x; ys[i] = res.E_v;
+    if(res.E_v > yMax) yMax = res.E_v;
+    if(res.E_v > yPeak){ yPeak = res.E_v; xPeakPos = x; }
+  }
+  /* round yMax up */
+  const yScaleMax = Math.max(WHO*1.1, Math.ceil(yMax * 1.15));
+
+  /* clear */
+  cctx.fillStyle = "#020602";
+  cctx.fillRect(0,0,w,h);
+
+  /* gridlines */
+  cctx.strokeStyle = "#0a1f0a";
+  cctx.lineWidth = 1;
+  cctx.font = "10px 'Share Tech Mono', monospace";
+  cctx.fillStyle = "#008F11";
+
+  const xTicks = [-120,-90,-60,-30,0,30,60,90,120];
+  xTicks.forEach(t => {
+    const px = padL + (t-xMin)/(xMax-xMin)*plotW;
+    cctx.beginPath(); cctx.moveTo(px, padT); cctx.lineTo(px, padT+plotH); cctx.stroke();
+    cctx.fillText(t+"", px-9, h-10);
+  });
+  const ySteps = 5;
+  for(let i=0;i<=ySteps;i++){
+    const v = yScaleMax * i/ySteps;
+    const py = padT + plotH - (v/yScaleMax)*plotH;
+    cctx.beginPath(); cctx.moveTo(padL, py); cctx.lineTo(padL+plotW, py); cctx.stroke();
+    cctx.fillText(v.toFixed(1), 4, py+3);
+  }
+
+  /* axes labels */
+  cctx.fillStyle = "#008F11";
+  cctx.fillText("x  (m)", padL+plotW-40, h-2);
+  cctx.save();
+  cctx.translate(10, padT+12);
+  cctx.fillText("E_v  (kV/m)", 0, 0);
+  cctx.restore();
+
+  /* WHO limit line */
+  if(WHO <= yScaleMax){
+    const py = padT + plotH - (WHO/yScaleMax)*plotH;
+    cctx.strokeStyle = "#FF5252";
+    cctx.setLineDash([6,4]);
+    cctx.beginPath(); cctx.moveTo(padL, py); cctx.lineTo(padL+plotW, py); cctx.stroke();
+    cctx.setLineDash([]);
+    cctx.fillStyle = "#FF5252";
+    cctx.fillText("WHO 5 kV/m", padL+plotW-78, py-4);
+  }
+
+  /* fill area under curve */
+  cctx.beginPath();
+  for(let i=0;i<=N;i++){
+    const px = padL + (xs[i]-xMin)/(xMax-xMin)*plotW;
+    const py = padT + plotH - (Math.min(ys[i],yScaleMax)/yScaleMax)*plotH;
+    if(i===0) cctx.moveTo(px,py); else cctx.lineTo(px,py);
+  }
+  cctx.lineTo(padL+plotW, padT+plotH);
+  cctx.lineTo(padL,        padT+plotH);
+  cctx.closePath();
+  const grad = cctx.createLinearGradient(0, padT, 0, padT+plotH);
+  grad.addColorStop(0, "rgba(0,255,65,0.30)");
+  grad.addColorStop(1, "rgba(0,255,65,0)");
+  cctx.fillStyle = grad;
+  cctx.fill();
+
+  /* curve */
+  cctx.strokeStyle = "#00FF41";
+  cctx.lineWidth = 2;
+  cctx.shadowColor = "#00FF41";
+  cctx.shadowBlur = 8;
+  cctx.beginPath();
+  for(let i=0;i<=N;i++){
+    const px = padL + (xs[i]-xMin)/(xMax-xMin)*plotW;
+    const py = padT + plotH - (Math.min(ys[i],yScaleMax)/yScaleMax)*plotH;
+    if(i===0) cctx.moveTo(px,py); else cctx.lineTo(px,py);
+  }
+  cctx.stroke();
+  cctx.shadowBlur = 0;
+
+  /* current-x marker */
+  const mx = padL + (STATE.x-xMin)/(xMax-xMin)*plotW;
+  if(STATE.x >= xMin && STATE.x <= xMax){
+    cctx.strokeStyle = "#F0FFF0";
+    cctx.setLineDash([3,3]);
+    cctx.beginPath(); cctx.moveTo(mx, padT); cctx.lineTo(mx, padT+plotH); cctx.stroke();
+    cctx.setLineDash([]);
+    /* dot at current value */
+    const curRes = computeEv(STATE);
+    const my = padT + plotH - (Math.min(curRes.E_v,yScaleMax)/yScaleMax)*plotH;
+    cctx.fillStyle = "#F0FFF0";
+    cctx.beginPath(); cctx.arc(mx, my, 4, 0, Math.PI*2); cctx.fill();
+    cctx.fillStyle = "#00FF41";
+    cctx.beginPath(); cctx.arc(mx, my, 2, 0, Math.PI*2); cctx.fill();
+  }
+
+  chartInfo.textContent =
+    "peak = " + yPeak.toFixed(3) + " kV/m   |   x_peak = " + xPeakPos.toFixed(1) + " m"
+    + "   |   above WHO at  |x| <= " +
+    (function(){
+      let edge = null;
+      for(let i=0;i<=N;i++){ if(ys[i] >= WHO){ edge = Math.max(edge||0, Math.abs(xs[i])); } }
+      return edge==null ? "—" : edge.toFixed(1) + " m";
+    })();
+}
+
+/* ================================================================
+   BACKGROUND  CANVAS  (tower + light rain + field lines)
+   ================================================================ */
+(() => {
+  const cv = document.getElementById("bg");
+  const cx = cv.getContext("2d", { alpha:false });
+  let W=0, H=0, DPR=Math.min(window.devicePixelRatio||1,2);
+
+  const FONT = 14;
+  const CHARS = "アイウエオカキクケコサシスセソタチツテトナニABCDEF0123456789+*/<>=";
+  let cols, drops;
+  function initRain(){
+    cols = Math.floor(W / FONT);
+    drops = new Float32Array(cols);
+    for(let i=0;i<cols;i++) drops[i] = Math.random()*H;
+  }
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    cv.style.width=W+"px"; cv.style.height=H+"px";
+    cv.width=Math.floor(W*DPR); cv.height=Math.floor(H*DPR);
+    cx.setTransform(DPR,0,0,DPR,0,0);
+    initRain();
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  let tPhase = 0;
+  function geom(){
+    const cxv = W*0.5, baseY = H, topY = H*0.18;
+    const baseW = Math.min(150, W*0.13), topW = baseW*0.22;
+    const segs = 12;
+    const armY = topY + 22;
+    const armLen = Math.min(W*0.35, 320);
+    const phases = [
+      { x:cxv - armLen*0.78, y:armY+8 },
+      { x:cxv,               y:armY+8 },
+      { x:cxv + armLen*0.78, y:armY+8 },
+    ];
+    return { cxv, baseY, topY, baseW, topW, segs, armY, armLen, phases };
+  }
+
+  function drawTower(g){
+    const {cxv, baseY, topY, baseW, topW, segs, armY, armLen, phases} = g;
+    cx.strokeStyle = "#003B00"; cx.lineWidth = 1.1;
+    cx.beginPath();
+    cx.moveTo(cxv-baseW/2, baseY); cx.lineTo(cxv-topW/2, topY);
+    cx.moveTo(cxv+baseW/2, baseY); cx.lineTo(cxv+topW/2, topY);
+    cx.stroke();
+    for(let i=0;i<segs;i++){
+      const t1=i/segs, t2=(i+1)/segs;
+      const y1=baseY-(baseY-topY)*t1, y2=baseY-(baseY-topY)*t2;
+      const w1=baseW*(1-t1)+topW*t1, w2=baseW*(1-t2)+topW*t2;
+      cx.beginPath();
+      cx.moveTo(cxv-w2/2, y2); cx.lineTo(cxv+w2/2, y2);
+      cx.moveTo(cxv-w1/2, y1); cx.lineTo(cxv+w2/2, y2);
+      cx.moveTo(cxv+w1/2, y1); cx.lineTo(cxv-w2/2, y2);
+      cx.stroke();
+    }
+    cx.beginPath();
+    cx.moveTo(cxv-armLen, armY); cx.lineTo(cxv+armLen, armY);
+    cx.moveTo(cxv-armLen, armY); cx.lineTo(cxv-topW*0.6, topY+50);
+    cx.moveTo(cxv+armLen, armY); cx.lineTo(cxv+topW*0.6, topY+50);
+    cx.stroke();
+    phases.forEach(p=>{
+      cx.strokeStyle="#003B00";
+      cx.beginPath(); cx.moveTo(p.x,armY); cx.lineTo(p.x,p.y); cx.stroke();
+      cx.fillStyle="#00FF41";
+      cx.beginPath(); cx.arc(p.x,p.y,2.2,0,Math.PI*2); cx.fill();
+      cx.strokeStyle="rgba(0,255,65,0.12)"; cx.lineWidth=1;
+      cx.beginPath(); cx.moveTo(0,p.y); cx.lineTo(W,p.y); cx.stroke();
+    });
+  }
+
+  function drawField(g){
+    tPhase += 0.011;
+    const groundY = H*0.97, NL = 9;
+    g.phases.forEach((c,idx)=>{
+      const ph = idx*(Math.PI*2/3);
+      const pulse = 0.5 + 0.5*Math.sin(tPhase + ph);
+      const baseA = 0.10 + 0.10*pulse;
+      for(let i=0;i<NL;i++){
+        const norm = (i/(NL-1))-0.5;
+        const angle = norm * Math.PI*0.9;
+        const reach = 220 + i*22;
+        const endX = c.x + Math.sin(angle)*reach*1.5;
+        const endY = groundY;
+        const midX = (c.x+endX)/2 + Math.sin(angle)*24;
+        const midY = c.y + (endY-c.y)*0.32;
+        const fade = 1 - Math.abs(norm)*1.2;
+        if(fade<=0) continue;
+        cx.strokeStyle = "rgba(0,255,65,"+(baseA*fade).toFixed(3)+")";
+        cx.lineWidth = 0.8;
+        cx.beginPath();
+        cx.moveTo(c.x, c.y);
+        cx.quadraticCurveTo(midX, midY, endX, endY);
+        cx.stroke();
+      }
+    });
+  }
+
+  function drawRain(){
+    cx.fillStyle = "rgba(0,255,65,0.10)";
+    cx.font = FONT + "px 'Share Tech Mono', monospace";
+    for(let i=0;i<cols;i++){
+      const ch = CHARS.charAt((Math.random()*CHARS.length)|0);
+      cx.fillText(ch, i*FONT, drops[i]);
+      if(drops[i] > H && Math.random() > 0.975) drops[i] = -20;
+      drops[i] += FONT * (0.40 + Math.random()*0.5);
+    }
+  }
+
+  let last = performance.now();
+  function loop(now){
+    if(now-last < 15){ requestAnimationFrame(loop); return; }
+    last = now;
+    cx.fillStyle = "rgba(0,0,0,0.22)";
+    cx.fillRect(0,0,W,H);
+    drawRain();
+    const g = geom();
+    drawTower(g);
+    drawField(g);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+
+/* initial render */
+update();
+window.addEventListener("load", () => { sizeChart(); drawChart(); });
+</script>
+</body>
+</html>

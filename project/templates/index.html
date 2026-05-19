@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="UHV AC Transmission Line Ground-Level Electric Field Predictor — ML + Analytical Engine">
+  <title>FieldSense — UHV E-Field Predictor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- ── Ambient background ──────────────────────────────── -->
+  <div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ── Top Nav ─────────────────────────────────────────── -->
+  <nav class="topnav" id="topnav">
+    <div class="nav-inner">
+      <a href="/" class="brand">
+        <div class="brand-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M14 2L4 8v12l10 6 10-6V8L14 2z" stroke="url(#bgrad)" stroke-width="1.8" fill="none"/>
+            <path d="M9 18l3-8 2 6 5-4" stroke="url(#bgrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <defs><linearGradient id="bgrad" x1="4" y1="2" x2="24" y2="26"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+          </svg>
+        </div>
+        <span class="brand-name">FieldSense</span>
+        <span class="brand-badge">PRO</span>
+      </a>
+      <div class="nav-links">
+        <span class="nav-status" id="nav-status">
+          <span class="status-dot"></span>
+          Model loaded
+        </span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero ────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-pill">⚡ UHV AC Transmission Line Analysis</div>
+      <h1 class="hero-title">Ground-Level<br><span class="gradient-text">Electric Field</span> Predictor</h1>
+      <p class="hero-desc">Predict E<sub>v</sub> beneath 1200 kV AC transmission lines using both machine learning regression and Maxwell's analytical method — side by side.</p>
+    </div>
+  </section>
+
+  <!-- ── Main Content ────────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- Input Section -->
+    <section class="glass-panel input-panel" id="input-section">
+      <div class="panel-header">
+        <div class="panel-title-row">
+          <div class="panel-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M6 10h8M10 6v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <h2>Input Parameters</h2>
+        </div>
+        <p class="panel-subtitle">Configure the transmission line geometry and voltage</p>
+      </div>
+
+      <form id="predict-form" autocomplete="off">
+        <div class="input-grid">
+          <div class="field" id="field-x">
+            <div class="field-top">
+              <label for="input-x">Lateral Distance</label>
+              <span class="field-var">x</span>
+            </div>
+            <div class="field-input-wrap">
+              <input type="number" id="input-x" name="x" value="0" step="any" required>
+              <span class="field-suffix">m</span>
+            </div>
+            <div class="field-range">Training range: −150 to 150 m</div>
+          </div>
+
+          <div class="field" id="field-H">
+            <div class="field-top">
+              <label for="input-H">Conductor Height</label>
+              <span class="field-var">H</span>
+            </div>
+            <div class="field-input-wrap">
+              <input type="number" id="input-H" name="H" value="37" step="any" required>
+              <span class="field-suffix">m</span>
+            </div>
+            <div class="field-range">Training range: 30 to 50 m</div>
+          </div>
+
+          <div class="field" id="field-d">
+            <div class="field-top">
+              <label for="input-d">Phase Spacing</label>
+              <span class="field-var">d</span>
+            </div>
+            <div class="field-input-wrap">
+              <input type="number" id="input-d" name="d" value="24" step="any" required>
+              <span class="field-suffix">m</span>
+            </div>
+            <div class="field-range">Training range: 15 to 30 m</div>
+          </div>
+
+          <div class="field" id="field-V">
+            <div class="field-top">
+              <label for="input-V">Phase Voltage (RMS)</label>
+              <span class="field-var">V</span>
+            </div>
+            <div class="field-input-wrap">
+              <input type="number" id="input-V" name="V" value="692.8203" step="any" required>
+              <span class="field-suffix">kV</span>
+            </div>
+            <div class="field-range">Training range: 600 to 800 kV</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="predict-btn">
+          <svg class="btn-icon" width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9h12M15 9l-4-4M15 9l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="btn-label" id="btn-label">Run Prediction</span>
+          <div class="btn-spinner" id="btn-spinner" hidden></div>
+        </button>
+      </form>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section" id="results-section" hidden>
+
+      <!-- Metric Cards -->
+      <div class="metric-row">
+        <div class="glass-panel metric-card metric-ml" id="card-ml">
+          <div class="metric-tag">ML Prediction</div>
+          <div class="metric-model" id="metric-model-name">—</div>
+          <div class="metric-number" id="metric-ml-val">—</div>
+          <div class="metric-unit">kV/m</div>
+          <div class="metric-badge" id="badge-ml"></div>
+        </div>
+
+        <div class="glass-panel metric-card metric-an" id="card-an">
+          <div class="metric-tag">Analytical Solution</div>
+          <div class="metric-model">Maxwell's Potential Method</div>
+          <div class="metric-number" id="metric-an-val">—</div>
+          <div class="metric-unit">kV/m</div>
+          <div class="metric-badge" id="badge-an"></div>
+        </div>
+
+        <div class="glass-panel metric-card metric-info" id="card-info">
+          <div class="metric-tag">Comparison</div>
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="info-key">r<sub>eq</sub></span>
+              <span class="info-value" id="info-req">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-key">WHO Limit</span>
+              <span class="info-value info-who">5.0 kV/m</span>
+            </div>
+            <div class="info-row">
+              <span class="info-key">Abs. Difference</span>
+              <span class="info-value" id="info-diff">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-key">Relative Error</span>
+              <span class="info-value" id="info-pct">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="glass-panel chart-panel" id="chart-panel">
+        <div class="panel-header">
+          <div class="panel-title-row">
+            <div class="panel-icon chart-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><polyline points="2,16 6,10 10,13 14,5 18,8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            </div>
+            <h2>Lateral E-Field Profile</h2>
+          </div>
+          <p class="panel-subtitle">Analytical vs ML prediction across the lateral span</p>
+        </div>
+        <div class="chart-container">
+          <canvas id="profile-chart"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── Footer ──────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <p>FieldSense &mdash; UHV AC Line E-Field Predictor &bull; ML + Analytical Engine</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
