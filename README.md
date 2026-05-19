@@ -54,5 +54,3 @@ Python · NumPy · Pandas · scikit-learn · TensorFlow · Matplotlib
 
 ---
 
-## Team
-B.Tech ECE — MGIT Hyderabad, 2026
