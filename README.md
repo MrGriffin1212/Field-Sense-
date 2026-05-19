@@ -53,7 +53,6 @@ Python · NumPy · Pandas · scikit-learn · TensorFlow · Matplotlib
 | `predict.py` | Prediction interface |
 | `compare.py` | Analytical vs ML comparison plot |
 | `index.html` | FieldSense website — Matrix theme |
-| `index_claude.html` | FieldSense website — Claude theme |
 
 ---
 
