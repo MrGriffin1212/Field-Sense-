@@ -3,8 +3,6 @@
 **Prediction of Electric Fields of UHV AC Transmission Lines 
 using Machine Learning Techniques**
 
-> Built as part of B.Tech ECE coursework at MGIT, Hyderabad.
-
 ---
 
 ## What is this?
